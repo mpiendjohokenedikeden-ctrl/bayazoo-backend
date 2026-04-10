@@ -25,11 +25,12 @@ module.exports = (sequelize) => {
     adresse: {
       type: DataTypes.STRING
     },
-  couponUtilise: {
-  type: DataTypes.STRING,
-  defaultValue: null
-  // null = pas encore de coupon genere
-  // 'utilise' = coupon utilise, en attente du prochain
-}
+    couponUtilise: {
+      type: DataTypes.STRING,
+      defaultValue: null
+    }
+  }, {
+    tableName: 'users',        // ✅ minuscules
+    freezeTableName: true      // ✅ Sequelize ne change pas le nom
   });
 };

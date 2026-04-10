@@ -7,7 +7,7 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     statut: {
-      type: DataTypes.ENUM('en attente', 'en préparation', 'prêt', 'en livraison', 'livré', 'payé', 'annulé'),
+      type: DataTypes.ENUM('en attente', 'en préparation', 'prêt', 'en livraison', 'livré', 'payé', 'annulé', 'en attente paiement'),
       defaultValue: 'en attente'
     },
     modePaiement: {
@@ -45,5 +45,8 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       defaultValue: null
     }
+  }, {
+    tableName: 'orders',
+    freezeTableName: true
   });
 };

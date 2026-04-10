@@ -23,5 +23,8 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: 1
     }
+  }, {
+    tableName: 'orderitems',
+    freezeTableName: true
   });
 };

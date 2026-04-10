@@ -19,6 +19,7 @@ module.exports = (sequelize) => {
       defaultValue: null
     }
   }, {
-    tableName: 'remiseespeces'
+    tableName: 'remiseespeces',
+    freezeTableName: true
   });
 };

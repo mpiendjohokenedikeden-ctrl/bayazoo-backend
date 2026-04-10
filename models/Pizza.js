@@ -22,5 +22,8 @@ module.exports = (sequelize) => {
       type: DataTypes.BOOLEAN,
       defaultValue: true
     }
+  }, {
+    tableName: 'pizzas',
+    freezeTableName: true
   });
 };

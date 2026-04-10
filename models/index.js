@@ -37,8 +37,13 @@ User.hasMany(RemiseEspeces, { foreignKey: 'livreurId', as: 'remises' });
 RemiseEspeces.belongsTo(User, { foreignKey: 'livreurId', as: 'livreur' });
 
 const syncDB = async () => {
-  await sequelize.sync({ alter: false });
-  console.log('✅ Tables synchronisees !');
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Connexion MySQL etablie !');
+    // ✅ PAS de sync — les tables existent deja en base
+  } catch (error) {
+    console.error('❌ Erreur MySQL :', error.message);
+  }
 };
 
 syncDB();

@@ -1,15 +1,25 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const { User, Order } = require('../models');
+
+// ===== CONFIGURATION EMAIL =====
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+// Stocker les codes temporairement en mémoire
+const codesReinitialisation = {};
 
 const inscription = async (req, res) => {
   try {
     const { nom, email, motDePasse, telephone } = req.body;
     if (!nom || !email || !motDePasse || !telephone) {
       return res.status(400).json({ message: 'Tous les champs sont obligatoires' });
-    }
-    if (!telephone.startsWith('+241') || telephone.length < 12) {
-      return res.status(400).json({ message: 'Numero de telephone invalide (ex: +241 XX XX XX XX)' });
     }
     const userExiste = await User.findOne({ where: { email } });
     if (userExiste) return res.status(400).json({ message: 'Cet email est deja utilise' });
@@ -37,24 +47,79 @@ const connexion = async (req, res) => {
   }
 };
 
-// ===== MOT DE PASSE OUBLIE =====
-const motDePasseOublie = async (req, res) => {
+// ===== ETAPE 1 — Envoyer code par email =====
+const envoyerCodeReinit = async (req, res) => {
   try {
-    const { email, telephone, nouveauMotDePasse } = req.body;
-    if (!email || !telephone || !nouveauMotDePasse) {
-      return res.status(400).json({ message: 'Tous les champs sont obligatoires' });
-    }
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email obligatoire' });
+
     const user = await User.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'Aucun compte trouve avec cet email' });
-    if (user.telephone !== telephone) {
-      return res.status(400).json({ message: 'Numero de telephone incorrect' });
+
+    // Generer code 6 chiffres
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Stocker le code avec expiration 10 minutes
+    codesReinitialisation[email] = {
+      code,
+      expiration: Date.now() + 10 * 60 * 1000
+    };
+
+    // Envoyer email
+    await transporter.sendMail({
+      from: '"BAYAZOO 🍕" <' + process.env.EMAIL_USER + '>',
+      to: email,
+      subject: 'Code de réinitialisation BAYAZOO',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 2rem; background: #f9f9f9; border-radius: 16px;">
+          <h1 style="color: #E63946; text-align: center; font-family: Georgia, serif;">BAY<span style="color: #1A1A2E">A</span>ZOO 🍕</h1>
+          <h2 style="text-align: center; color: #333;">Réinitialisation de mot de passe</h2>
+          <p style="color: #666;">Bonjour <strong>${user.nom}</strong>,</p>
+          <p style="color: #666;">Voici votre code de réinitialisation :</p>
+          <div style="background: #1A1A2E; color: white; font-size: 2.5rem; font-weight: 900; text-align: center; padding: 1.5rem; border-radius: 12px; letter-spacing: 0.5rem; margin: 1.5rem 0;">
+            ${code}
+          </div>
+          <p style="color: #888; font-size: 0.85rem; text-align: center;">Ce code expire dans <strong>10 minutes</strong>.</p>
+          <p style="color: #888; font-size: 0.85rem; text-align: center;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 1.5rem 0;">
+          <p style="color: #bbb; font-size: 0.75rem; text-align: center;">© 2024 BAYAZOO — La vraie pizza artisanale</p>
+        </div>
+      `
+    });
+
+    res.json({ message: 'Code envoye sur ' + email });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur envoi email : ' + error.message });
+  }
+};
+
+// ===== ETAPE 2 — Verifier code + changer mot de passe =====
+const reinitialiserMotDePasse = async (req, res) => {
+  try {
+    const { email, code, nouveauMotDePasse } = req.body;
+    if (!email || !code || !nouveauMotDePasse) {
+      return res.status(400).json({ message: 'Tous les champs sont obligatoires' });
+    }
+
+    const donnees = codesReinitialisation[email];
+    if (!donnees) return res.status(400).json({ message: 'Aucun code demande pour cet email' });
+    if (Date.now() > donnees.expiration) {
+      delete codesReinitialisation[email];
+      return res.status(400).json({ message: 'Code expire — demandez un nouveau code' });
+    }
+    if (donnees.code !== code) {
+      return res.status(400).json({ message: 'Code incorrect' });
     }
     if (nouveauMotDePasse.length < 6) {
       return res.status(400).json({ message: 'Le mot de passe doit avoir au moins 6 caracteres' });
     }
+
+    const user = await User.findOne({ where: { email } });
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(nouveauMotDePasse, salt);
     await user.update({ motDePasse: hash });
+
+    delete codesReinitialisation[email];
     res.json({ message: 'Mot de passe modifie avec succes !' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -157,5 +222,5 @@ module.exports = {
   inscription, connexion, creerUtilisateur,
   getLivreurs, getReceveurs, supprimerUtilisateur,
   verifierCoupon, verifierCouponDispo, utiliserCoupon,
-  motDePasseOublie, modifierProfil
+  modifierProfil, envoyerCodeReinit, reinitialiserMotDePasse
 };

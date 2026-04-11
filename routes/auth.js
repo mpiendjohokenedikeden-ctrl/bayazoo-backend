@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { inscription, connexion, creerUtilisateur, getLivreurs, getReceveurs, supprimerUtilisateur, verifierCoupon, verifierCouponDispo, utiliserCoupon, motDePasseOublie, modifierProfil } = require('../controllers/authController');
+const { inscription, connexion, creerUtilisateur, getLivreurs, getReceveurs, supprimerUtilisateur, verifierCoupon, verifierCouponDispo, utiliserCoupon, modifierProfil, envoyerCodeReinit, reinitialiserMotDePasse } = require('../controllers/authController');
 const protect = require('../middleware/authMiddleware');
 
 router.post('/inscription', inscription);
 router.post('/connexion', connexion);
-router.post('/mot-de-passe-oublie', motDePasseOublie);
+router.post('/envoyer-code-reinit', envoyerCodeReinit);
+router.post('/reinitialiser-mot-de-passe', reinitialiserMotDePasse);
 router.put('/modifier-profil', protect, modifierProfil);
 router.get('/profil', protect, async (req, res) => {
   const { User } = require('../models');

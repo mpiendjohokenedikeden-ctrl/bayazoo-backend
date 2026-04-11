@@ -6,8 +6,13 @@ const { User, Order } = require('../models');
 // ===== CONFIGURATION EMAIL =====
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
+  requireTLS: true,
+  tls: {
+    rejectUnauthorized: false
+  },
+  family: 4,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -62,22 +67,22 @@ const envoyerCodeReinit = async (req, res) => {
     codesReinitialisation[email] = { code, expiration: Date.now() + 10 * 60 * 1000 };
 
     await transporter.sendMail({
-      from: '"BAYAZOO 🍕" <' + process.env.EMAIL_USER + '>',
+      from: '"BAYAZOO" <' + process.env.EMAIL_USER + '>',
       to: email,
-      subject: 'Code de réinitialisation BAYAZOO',
+      subject: 'Code de reinitialisation BAYAZOO',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 2rem; background: #f9f9f9; border-radius: 16px;">
-          <h1 style="color: #E63946; text-align: center; font-family: Georgia, serif;">BAYAZOO 🍕</h1>
-          <h2 style="text-align: center; color: #333;">Réinitialisation de mot de passe</h2>
+          <h1 style="color: #E63946; text-align: center; font-family: Georgia, serif;">BAYAZOO</h1>
+          <h2 style="text-align: center; color: #333;">Reinitialisation de mot de passe</h2>
           <p style="color: #666;">Bonjour <strong>${user.nom}</strong>,</p>
-          <p style="color: #666;">Voici votre code de réinitialisation :</p>
+          <p style="color: #666;">Voici votre code de reinitialisation :</p>
           <div style="background: #1A1A2E; color: white; font-size: 2.5rem; font-weight: 900; text-align: center; padding: 1.5rem; border-radius: 12px; letter-spacing: 0.5rem; margin: 1.5rem 0;">
             ${code}
           </div>
           <p style="color: #888; font-size: 0.85rem; text-align: center;">Ce code expire dans <strong>10 minutes</strong>.</p>
-          <p style="color: #888; font-size: 0.85rem; text-align: center;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+          <p style="color: #888; font-size: 0.85rem; text-align: center;">Si vous n'avez pas demande cette reinitialisation, ignorez cet email.</p>
           <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 1.5rem 0;">
-          <p style="color: #bbb; font-size: 0.75rem; text-align: center;">© 2024 BAYAZOO — La vraie pizza artisanale</p>
+          <p style="color: #bbb; font-size: 0.75rem; text-align: center;">2024 BAYAZOO - La vraie pizza artisanale</p>
         </div>
       `
     });

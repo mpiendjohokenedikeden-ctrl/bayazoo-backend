@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { inscription, connexion, creerUtilisateur, getLivreurs, getReceveurs, supprimerUtilisateur, verifierCoupon, verifierCouponDispo, utiliserCoupon, modifierProfil, envoyerCodeReinit, reinitialiserMotDePasse } = require('../controllers/authController');
+const { inscription, connexion, creerUtilisateur, getLivreurs, getReceveurs, supprimerUtilisateur, verifierCoupon, verifierCouponDispo, utiliserCoupon, modifierProfil, modifierMotDePasse, envoyerCodeReinit, reinitialiserMotDePasse } = require('../controllers/authController');
 const protect = require('../middleware/authMiddleware');
 
 router.post('/inscription', inscription);
@@ -8,10 +8,11 @@ router.post('/connexion', connexion);
 router.post('/envoyer-code-reinit', envoyerCodeReinit);
 router.post('/reinitialiser-mot-de-passe', reinitialiserMotDePasse);
 router.put('/modifier-profil', protect, modifierProfil);
+router.put('/modifier-mot-de-passe', protect, modifierMotDePasse);
 router.get('/profil', protect, async (req, res) => {
   const { User } = require('../models');
   const user = await User.findByPk(req.user.id, {
-    attributes: ['id', 'nom', 'email', 'role', 'telephone', 'couponUtilise']
+    attributes: ['id', 'nom', 'email', 'role', 'telephone', 'couponUtilise', 'createdAt']
   });
   res.json(user);
 });

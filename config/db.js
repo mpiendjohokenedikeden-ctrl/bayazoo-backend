@@ -17,8 +17,7 @@ const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ MySQL connecté avec succès !');
-    await sequelize.sync({ alter: true });
-    console.log('✅ Tables créées/mises à jour !');
+    // ✅ PAS de sync — les tables existent deja
   } catch (error) {
     console.error('❌ Erreur MySQL :', error.message);
     process.exit(1);

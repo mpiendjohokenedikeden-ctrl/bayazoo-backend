@@ -5,7 +5,9 @@ const { User, Order } = require('../models');
 
 // ===== CONFIGURATION EMAIL =====
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -56,23 +58,16 @@ const envoyerCodeReinit = async (req, res) => {
     const user = await User.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'Aucun compte trouve avec cet email' });
 
-    // Generer code 6 chiffres
     const code = Math.floor(100000 + Math.random() * 900000).toString();
+    codesReinitialisation[email] = { code, expiration: Date.now() + 10 * 60 * 1000 };
 
-    // Stocker le code avec expiration 10 minutes
-    codesReinitialisation[email] = {
-      code,
-      expiration: Date.now() + 10 * 60 * 1000
-    };
-
-    // Envoyer email
     await transporter.sendMail({
       from: '"BAYAZOO 🍕" <' + process.env.EMAIL_USER + '>',
       to: email,
       subject: 'Code de réinitialisation BAYAZOO',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 2rem; background: #f9f9f9; border-radius: 16px;">
-          <h1 style="color: #E63946; text-align: center; font-family: Georgia, serif;">BAY<span style="color: #1A1A2E">A</span>ZOO 🍕</h1>
+          <h1 style="color: #E63946; text-align: center; font-family: Georgia, serif;">BAYAZOO 🍕</h1>
           <h2 style="text-align: center; color: #333;">Réinitialisation de mot de passe</h2>
           <p style="color: #666;">Bonjour <strong>${user.nom}</strong>,</p>
           <p style="color: #666;">Voici votre code de réinitialisation :</p>
@@ -100,25 +95,19 @@ const reinitialiserMotDePasse = async (req, res) => {
     if (!email || !code || !nouveauMotDePasse) {
       return res.status(400).json({ message: 'Tous les champs sont obligatoires' });
     }
-
     const donnees = codesReinitialisation[email];
     if (!donnees) return res.status(400).json({ message: 'Aucun code demande pour cet email' });
     if (Date.now() > donnees.expiration) {
       delete codesReinitialisation[email];
       return res.status(400).json({ message: 'Code expire — demandez un nouveau code' });
     }
-    if (donnees.code !== code) {
-      return res.status(400).json({ message: 'Code incorrect' });
-    }
-    if (nouveauMotDePasse.length < 6) {
-      return res.status(400).json({ message: 'Le mot de passe doit avoir au moins 6 caracteres' });
-    }
+    if (donnees.code !== code) return res.status(400).json({ message: 'Code incorrect' });
+    if (nouveauMotDePasse.length < 6) return res.status(400).json({ message: 'Le mot de passe doit avoir au moins 6 caracteres' });
 
     const user = await User.findOne({ where: { email } });
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(nouveauMotDePasse, salt);
     await user.update({ motDePasse: hash });
-
     delete codesReinitialisation[email];
     res.json({ message: 'Mot de passe modifie avec succes !' });
   } catch (error) {

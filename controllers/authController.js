@@ -114,17 +114,14 @@ const reinitialiserMotDePasse = async (req, res) => {
 // ===== MODIFIER PROFIL (nom + email) =====
 const modifierProfil = async (req, res) => {
   try {
-    const { nom, email } = req.body;
+    const { nom, email, telephone } = req.body;
     if (!nom) return res.status(400).json({ message: 'Le nom est obligatoire' });
     const user = await User.findByPk(req.user.id);
-
-    // Vérifier si email déjà utilisé par quelqu'un d'autre
     if (email && email !== user.email) {
       const emailExiste = await User.findOne({ where: { email } });
       if (emailExiste) return res.status(400).json({ message: 'Cet email est deja utilise' });
     }
-
-    await user.update({ nom, email: email || user.email });
+    await user.update({ nom, email: email || user.email, telephone: telephone || user.telephone });
     const token = jwt.sign({ id: user.id, role: user.role, nom }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ message: 'Profil modifie !', user: { id: user.id, nom, email: email || user.email, role: user.role }, token });
   } catch (error) {
